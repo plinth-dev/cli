@@ -1,0 +1,23 @@
+# Go
+bin/
+dist/
+plinth
+plinth.exe
+*.test
+*.out
+coverage.txt
+coverage.html
+
+# GoReleaser
+.goreleaser/
+
+# Local env
+.env
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
