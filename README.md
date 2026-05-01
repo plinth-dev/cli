@@ -1,10 +1,11 @@
 # Plinth — CLI
 
-`plinth` is a single-binary Go CLI that scaffolds new modules from the Plinth starters. Five minutes from idea to deployed-in-dev.
+> **Status: not yet released — Phase E in progress.**
+> The Homebrew tap and `go install` paths below are the **target** install flow. Neither resolves yet — there's no Go code in this repo and no `plinth-dev/homebrew-tap` repo. Track progress on the [roadmap](https://github.com/plinth-dev/.github/blob/main/ROADMAP.md).
 
-> **Status: v0.1.0 — Phase E in progress.**
+`plinth` will be a single-binary Go CLI that scaffolds new modules from the Plinth starters. Target: five minutes from idea to deployed-in-dev.
 
-## Install
+## Install (target — Phase E)
 
 ```bash
 # Homebrew tap
@@ -14,7 +15,7 @@ brew install plinth-dev/tap/plinth
 go install github.com/plinth-dev/cli@latest
 ```
 
-## Usage
+## Usage (target)
 
 ```bash
 # Scaffold a module with both web and API
