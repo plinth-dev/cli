@@ -1,58 +1,111 @@
 # Plinth — CLI
 
-> **Status: not yet released — Phase E in progress.**
-> The Homebrew tap and `go install` paths below are the **target** install flow. Neither resolves yet — there's no Go code in this repo and no `plinth-dev/homebrew-tap` repo. Track progress on the [roadmap](https://github.com/plinth-dev/.github/blob/main/ROADMAP.md).
+`plinth` is a single-binary Go CLI that scaffolds new modules from the [`starter-web`](https://github.com/plinth-dev/starter-web) and [`starter-api`](https://github.com/plinth-dev/starter-api) starters. It downloads a pinned starter tag, rewrites identifiers to your chosen names, and (optionally) initialises a fresh git repository.
 
-`plinth` will be a single-binary Go CLI that scaffolds new modules from the Plinth starters. Target: five minutes from idea to deployed-in-dev.
-
-## Install (target — Phase E)
+## Install
 
 ```bash
-# Homebrew tap
-brew install plinth-dev/tap/plinth
-
-# Or via Go
-go install github.com/plinth-dev/cli@latest
+go install github.com/plinth-dev/cli/cmd/plinth@latest
 ```
 
-## Usage (target)
+That writes a `plinth` binary into `$(go env GOPATH)/bin`. Make sure that directory is on your `PATH`.
+
+The Homebrew tap (`brew install plinth-dev/tap/plinth`) is still on the roadmap.
+
+## Usage
 
 ```bash
-# Scaffold a module with both web and API
-plinth new my-module --web --api --owner=platform-team --data-class=internal
+# Scaffold a new module with both web and API tiers.
+plinth new billing --module-path github.com/acme/billing-api
 
 # Web only
-plinth new my-module --web
+plinth new billing --web
 
 # API only
-plinth new my-module --api
+plinth new billing --api --module-path github.com/acme/billing-api
 
-# Verify local toolchain
+# Pin to a specific starter tag
+plinth new billing --ref v0.1.0
+
+# Verify your local toolchain
 plinth doctor
 
 # Print version
 plinth version
 ```
 
-## What `plinth new` does
+`plinth new <name>` produces:
 
-1. Clones [`starter-web`](https://github.com/plinth-dev/starter-web) and/or [`starter-api`](https://github.com/plinth-dev/starter-api) into `my-module/` and `my-module-api/`.
-2. Renames everything: module name, env var prefixes, package names, container names, Cerbos resource kind.
-3. Optionally creates a GitLab project (with `--gitlab-push`) and pushes.
-4. Optionally opens MRs against the GitOps repo (Argo Application) and the policies repo (default Cerbos policy) with `--open-mrs`.
-5. Optionally registers the module in Backstage with `--register-backstage`.
+| Tier  | Directory          | Default identifier            |
+|-------|--------------------|-------------------------------|
+| API   | `<name>-api/`      | Go module: `github.com/example/<name>-api` |
+| Web   | `<name>-web/`      | npm `name`: `<name>-web`      |
 
-Output is **deterministic for the same inputs** — CI compares generated structure against a checked-in golden tree on every change.
+The Go module path can be overridden with `--module-path`. Output directory is the current working directory by default; use `--dir <path>` to target somewhere else.
 
-## Why both a CLI and a Backstage template
+### Flags
 
-The [`scaffolder`](https://github.com/plinth-dev/scaffolder) Backstage template is the in-portal flow for app teams who already use Backstage. The CLI is the offline / scripting / first-time-clusters flow. Both produce identical output for the same inputs (CI verifies).
+| Flag             | Default                              | Notes |
+|------------------|--------------------------------------|-------|
+| `--web`          | (off — implies both with `--api` off) | scaffold the Next.js starter |
+| `--api`          | (off — implies both with `--web` off) | scaffold the Go starter |
+| `--dir DIR`      | `.`                                  | parent directory for the new scaffolds |
+| `--module-path PATH` | `github.com/example/<name>-api`  | Go module path for the API scaffold |
+| `--ref REF`      | `v0.1.0`                             | starter tag to fetch from GitHub |
+| `--no-git`       | off                                  | skip `git init` inside generated dirs |
+
+If neither `--web` nor `--api` is passed, both are scaffolded.
+
+### What `plinth new` does
+
+1. Fetches `https://codeload.github.com/plinth-dev/<starter>/tar.gz/refs/tags/<ref>` over HTTPS and extracts it.
+2. Rewrites a small fixed set of identifier tokens:
+   - `github.com/plinth-dev/starter-api` → your `--module-path`
+   - bare `starter-api` (in `cmd/server/main.go`, `docker-compose.yml`, README) → `<name>-api`
+   - bare `starter-web` (in `package.json`, `src/lib/env.ts`, `instrumentation-client.ts`) → `<name>-web`
+3. Skips binary files, lockfiles (`go.sum`, `pnpm-lock.yaml`), `node_modules/`, `.next/`, `dist/`, `vendor/`.
+4. Runs `git init -q -b main` in each scaffolded directory unless `--no-git` is given.
+
+It does **not** rename the sample `Items` resource (Cerbos policies, handlers, repository) — that's documented as a manual step in each starter's README so you can choose your own resource shape.
+
+### `plinth doctor`
+
+Reports `OK` / `FAIL` / `SKIP` for each tool the starters need:
+
+| Tool   | Required | Minimum |
+|--------|----------|---------|
+| `go`   | ✓        | 1.25    |
+| `git`  | ✓        | 2.30    |
+| `node` | ✓        | 20.0    |
+| `pnpm` | ✓        | 9.0     |
+| `docker` | optional | —     |
+
+Exit status is non-zero if any required tool is missing or below its minimum.
+
+## Build from source
+
+```bash
+git clone https://github.com/plinth-dev/cli && cd cli
+make build       # writes ./bin/plinth with version baked in via -ldflags
+make test        # go test -race -cover ./...
+make install     # go install with ldflags into $GOPATH/bin
+```
+
+## Roadmap
+
+These were in scope of the original CLI vision but are deferred:
+
+- Homebrew tap (`plinth-dev/homebrew-tap`).
+- `--gitlab-push`, `--open-mrs`, `--register-backstage` integrations — these are deployment-platform-specific. Plinth's stance is that the CLI emits clean code; wiring it to your GitOps / portal of choice is a thin layer you control.
+- Resource-rename helper (Items → your-thing).
+- Golden-tree CI verification of generated output.
+
+Track progress on the [main project roadmap](https://github.com/plinth-dev/.github/blob/main/ROADMAP.md).
 
 ## Related
 
-- [`scaffolder`](https://github.com/plinth-dev/scaffolder) — the Backstage software template.
 - [`starter-web`](https://github.com/plinth-dev/starter-web) / [`starter-api`](https://github.com/plinth-dev/starter-api) — what gets cloned.
-- [`plinth.run/start/try-it`](https://plinth.run/start/try-it/) — the 60-minute end-to-end tutorial.
+- [`scaffolder`](https://github.com/plinth-dev/scaffolder) — Backstage software template (parallel scaffolder for portal users).
 
 ## License
 
