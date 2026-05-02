@@ -2,6 +2,8 @@
 
 `plinth` is a single-binary Go CLI that scaffolds new modules from the [`starter-web`](https://github.com/plinth-dev/starter-web) and [`starter-api`](https://github.com/plinth-dev/starter-api) starters. It downloads a pinned starter tag, rewrites identifiers to your chosen names, and (optionally) initialises a fresh git repository.
 
+Project docs and the broader Plinth platform: [plinth.run](https://plinth.run).
+
 ## Install
 
 ```bash
